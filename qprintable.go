@@ -229,9 +229,9 @@ func hexValue(b byte) int {
 		return int(b - byte('0'))
 	}
 	if b >= byte('A') && b <= byte('F') {
-		return 10 + int(b - byte('A'))
+		return 10 + int(b-byte('A'))
 	}
-	return 10 + int(b - byte('a'))
+	return 10 + int(b-byte('a'))
 }
 
 func isSpace(b byte) bool {
@@ -379,15 +379,15 @@ func (d *decoder) Read(p []byte) (n int, err os.Error) {
 				canContinue = false
 			}
 			if err == os.EOF && read == 0 && d.leftovers.Len() > 0 {
-			  // Underlying Reader is exhausted and there's still data in leftovers
+				// Underlying Reader is exhausted and there's still data in leftovers
 				// This can't happen in well-formed streams. For ill-formed streams :
 				//  - if leftovers = "=\r", "=(spaces)", just discard it
 				//  - if leftovers = "=", "=(hex)", "\r" and add it to buffer
 				if d.leftovers.Len() == 2 && (isSpace(d.leftovers.Bytes()[1]) || d.leftovers.Bytes()[1] == byte('\r')) {
-				 d.leftovers.Truncate(0)
+					d.leftovers.Truncate(0)
 				} else {
-				 d.buf.Write(d.leftovers.Bytes())
-				 d.leftovers.Truncate(0)
+					d.buf.Write(d.leftovers.Bytes())
+					d.leftovers.Truncate(0)
 				}
 			} else {
 				d.parseBytes(rawData[:read])

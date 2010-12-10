@@ -22,7 +22,7 @@ var universalTests = []universalTestData{ // Will be tested with all encodings
 	{"Ascii 27 (Escape) = \033", "Ascii 27 (Escape) =3D =1B"},
 }
 
-var eolTests = []eolTestData {
+var eolTests = []eolTestData{
 	// Since non-eol CR or LF characters are invalid in text encodings, these strings are invalid.
 	// In consequence, we lose idempotence (decode(encode(x)) can be ≠ x), so we will only test
 	// that encode(decodedValue) = encodedValue. decode(encodedValue) = decodedValue will be tested
@@ -117,25 +117,25 @@ func testEncode(t *testing.T, testName string, enc *Encoding, decoded, encoded [
 
 func TestUniversalEncode(t *testing.T) {
 	for i, testData := range universalTests {
-		testEncode(t, fmt.Sprintf("%d/Binary",i+1), BinaryEncoding, []byte(testData.decoded), []byte(testData.encoded))
-		testEncode(t, fmt.Sprintf("%d/Unix",i+1), UnixTextEncoding, []byte(testData.decoded), []byte(testData.encoded))
-		testEncode(t, fmt.Sprintf("%d/Windows",i+1), WindowsTextEncoding, []byte(testData.decoded), []byte(testData.encoded))
-		testEncode(t, fmt.Sprintf("%d/Mac",i+1), MacTextEncoding, []byte(testData.decoded), []byte(testData.encoded))
+		testEncode(t, fmt.Sprintf("%d/Binary", i+1), BinaryEncoding, []byte(testData.decoded), []byte(testData.encoded))
+		testEncode(t, fmt.Sprintf("%d/Unix", i+1), UnixTextEncoding, []byte(testData.decoded), []byte(testData.encoded))
+		testEncode(t, fmt.Sprintf("%d/Windows", i+1), WindowsTextEncoding, []byte(testData.decoded), []byte(testData.encoded))
+		testEncode(t, fmt.Sprintf("%d/Mac", i+1), MacTextEncoding, []byte(testData.decoded), []byte(testData.encoded))
 	}
 }
 
 func TestEOLEncode(t *testing.T) {
 	for i, testData := range eolTests {
-		testEncode(t, fmt.Sprintf("%d/Binary",i+1), BinaryEncoding, []byte(testData.decoded), []byte(testData.binEncoded))
-		testEncode(t, fmt.Sprintf("%d/Unix",i+1), UnixTextEncoding, []byte(testData.decoded), []byte(testData.unixEncoded))
-		testEncode(t, fmt.Sprintf("%d/Windows",i+1), WindowsTextEncoding, []byte(testData.decoded), []byte(testData.winEncoded))
-		testEncode(t, fmt.Sprintf("%d/Mac",i+1), MacTextEncoding, []byte(testData.decoded), []byte(testData.macEncoded))
+		testEncode(t, fmt.Sprintf("%d/Binary", i+1), BinaryEncoding, []byte(testData.decoded), []byte(testData.binEncoded))
+		testEncode(t, fmt.Sprintf("%d/Unix", i+1), UnixTextEncoding, []byte(testData.decoded), []byte(testData.unixEncoded))
+		testEncode(t, fmt.Sprintf("%d/Windows", i+1), WindowsTextEncoding, []byte(testData.decoded), []byte(testData.winEncoded))
+		testEncode(t, fmt.Sprintf("%d/Mac", i+1), MacTextEncoding, []byte(testData.decoded), []byte(testData.macEncoded))
 	}
 }
 
 func TestWrapEncode(t *testing.T) {
 	for i, testData := range wrapTests {
-		testEncode(t, fmt.Sprintf("%d/Unix",i+1), UnixTextEncoding, []byte(testData.decoded), []byte(testData.encoded))
+		testEncode(t, fmt.Sprintf("%d/Unix", i+1), UnixTextEncoding, []byte(testData.decoded), []byte(testData.encoded))
 	}
 }
 
@@ -152,8 +152,8 @@ func testDecodeChunked(t *testing.T, chunkSize int, testName string, enc *Encodi
 	var n int
 
 	for err != os.EOF {
-	 n, err = decoder.Read(chunk)
-	 decBuf.Write(chunk[:n])
+		n, err = decoder.Read(chunk)
+		decBuf.Write(chunk[:n])
 	}
 
 	testEqual(t, testName, decoded, decBuf.Bytes())
@@ -169,24 +169,24 @@ func testDecode(t *testing.T, testName string, enc *Encoding, decoded, encoded [
 
 func TestUniversalDecode(t *testing.T) {
 	for i, testData := range universalTests {
-		testDecode(t, fmt.Sprintf("%d/Binary",i+1), BinaryEncoding, []byte(testData.decoded), []byte(testData.encoded))
-		testDecode(t, fmt.Sprintf("%d/Unix",i+1), UnixTextEncoding, []byte(testData.decoded), []byte(testData.encoded))
-		testDecode(t, fmt.Sprintf("%d/Windows",i+1), WindowsTextEncoding, []byte(testData.decoded), []byte(testData.encoded))
-		testDecode(t, fmt.Sprintf("%d/Mac",i+1), MacTextEncoding, []byte(testData.decoded), []byte(testData.encoded))
+		testDecode(t, fmt.Sprintf("%d/Binary", i+1), BinaryEncoding, []byte(testData.decoded), []byte(testData.encoded))
+		testDecode(t, fmt.Sprintf("%d/Unix", i+1), UnixTextEncoding, []byte(testData.decoded), []byte(testData.encoded))
+		testDecode(t, fmt.Sprintf("%d/Windows", i+1), WindowsTextEncoding, []byte(testData.decoded), []byte(testData.encoded))
+		testDecode(t, fmt.Sprintf("%d/Mac", i+1), MacTextEncoding, []byte(testData.decoded), []byte(testData.encoded))
 	}
 }
 
 func TestEOLDecode(t *testing.T) {
- testDecode(t, "0/Unix", UnixTextEncoding, []byte(eolTests[0].decoded), []byte(eolTests[0].unixEncoded))
- testDecode(t, "0/Binary", BinaryEncoding, []byte(eolTests[0].decoded), []byte(eolTests[0].binEncoded))
- testDecode(t, "1/Windows", WindowsTextEncoding, []byte(eolTests[1].decoded), []byte(eolTests[1].winEncoded))
- testDecode(t, "1/Binary", BinaryEncoding, []byte(eolTests[1].decoded), []byte(eolTests[1].binEncoded))
- testDecode(t, "2/Unix", MacTextEncoding, []byte(eolTests[2].decoded), []byte(eolTests[2].macEncoded))
- testDecode(t, "2/Binary", BinaryEncoding, []byte(eolTests[2].decoded), []byte(eolTests[2].binEncoded))
+	testDecode(t, "0/Unix", UnixTextEncoding, []byte(eolTests[0].decoded), []byte(eolTests[0].unixEncoded))
+	testDecode(t, "0/Binary", BinaryEncoding, []byte(eolTests[0].decoded), []byte(eolTests[0].binEncoded))
+	testDecode(t, "1/Windows", WindowsTextEncoding, []byte(eolTests[1].decoded), []byte(eolTests[1].winEncoded))
+	testDecode(t, "1/Binary", BinaryEncoding, []byte(eolTests[1].decoded), []byte(eolTests[1].binEncoded))
+	testDecode(t, "2/Unix", MacTextEncoding, []byte(eolTests[2].decoded), []byte(eolTests[2].macEncoded))
+	testDecode(t, "2/Binary", BinaryEncoding, []byte(eolTests[2].decoded), []byte(eolTests[2].binEncoded))
 }
 
 func TestWrapDecode(t *testing.T) {
 	for i, testData := range wrapTests {
-		testDecode(t, fmt.Sprintf("%d/Unix",i+1), UnixTextEncoding, []byte(testData.decoded), []byte(testData.encoded))
+		testDecode(t, fmt.Sprintf("%d/Unix", i+1), UnixTextEncoding, []byte(testData.decoded), []byte(testData.encoded))
 	}
 }
