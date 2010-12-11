@@ -3,7 +3,6 @@ package qprintable
 import (
 	"bytes"
 	"testing"
-	"json"
 	"fmt"
 	"os"
 )
@@ -69,12 +68,9 @@ var wrapTests = []universalTestData{ // Will be tested with Unix encoding
 
 func testEqual(t *testing.T, testName string, expected, actual []byte) bool {
 	if bytes.Compare(expected, actual) != 0 {
-		expectedJSON, _ := json.Marshal(string(expected))
-		actualJSON, _ := json.Marshal(string(actual))
-
 		t.Logf("Test %s: result is not what was expected !", testName)
-		t.Logf(" Expected result (JSON): %s", string(expectedJSON))
-		t.Logf("   Actual result (JSON): %s", string(actualJSON))
+		t.Logf(" Expected result: %#v", string(expected))
+		t.Logf("   Actual result: %#v", string(actual))
 		t.Fail()
 
 		return false
