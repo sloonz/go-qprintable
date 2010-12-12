@@ -7,12 +7,28 @@ import (
 	"os"
 )
 
+type encDetectionTestData struct {
+	data   string
+	result *Encoding
+}
+
 type universalTestData struct {
 	decoded, encoded string
 }
 
 type eolTestData struct {
 	decoded, unixEncoded, winEncoded, macEncoded, binEncoded string
+}
+
+var encDetectionTests = []encDetectionTestData{
+	{"Hello\nworld", UnixTextEncoding},
+	{"Hello\rworld", MacTextEncoding},
+	{"Hello\r\nworld", WindowsTextEncoding},
+	{"Hello\rworld\n", BinaryEncoding},
+	{"Hello\rworld\r\n", BinaryEncoding},
+	{"Hello\nworld\r\n", BinaryEncoding},
+	{"\r\nHello\rworld\n", BinaryEncoding},
+	{"Hello world", UnixTextEncoding},
 }
 
 var universalTests = []universalTestData{ // Will be tested with all encodings
@@ -76,6 +92,17 @@ func testEqual(t *testing.T, testName string, expected, actual []byte) bool {
 		return false
 	}
 	return true
+}
+
+/**
+ * Encoding detection tests
+ */
+func TestEncodingDetection(t *testing.T) {
+	for _, data := range encDetectionTests {
+		if DetectEncoding(data.data) != data.result {
+			t.Errorf("DetectEncoding(%#v): expected %#v, got %#v", data.data, data.result.nativeEol, DetectEncoding(data.data).nativeEol)
+		}
+	}
 }
 
 /**

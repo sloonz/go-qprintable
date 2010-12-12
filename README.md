@@ -75,3 +75,11 @@ you can safely ignore it in all other cases.
 	type Encoding struct {
 		// contains unexported fields
 	}
+
+`func DetectEncoding(data string) *Encoding`
+
+Try to detect encoding of string:
+* strings with no \r will be Unix
+* strings with \r and no \n will be Mac
+* strings with count(\r\n) == count(\r) == count(\n) will be Windows
+* other strings will be binary

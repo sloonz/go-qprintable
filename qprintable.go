@@ -21,6 +21,7 @@ import (
 	"io"
 	"os"
 	"bytes"
+	"strings"
 )
 
 const maxLineSize = 76
@@ -50,6 +51,22 @@ var WindowsTextEncoding = &Encoding{true, "\r\n"}
 // In binary encoding, CR and LF characters are treated like other control
 // characters sequence and are escaped.
 var BinaryEncoding = &Encoding{false, ""}
+
+// Try to detect encoding of string:
+// strings with no \r will be Unix,
+// strings with \r and no \n will be Mac,
+// strings with count(\r\n) == count(\r) == count(\n) will be Windows,
+// other strings will be binary
+func DetectEncoding(data string) *Encoding {
+	if strings.Count(data, "\r") == 0 {
+		return UnixTextEncoding
+	} else if strings.Count(data, "\n") == 0 {
+		return MacTextEncoding
+	} else if strings.Count(data, "\r") == strings.Count(data, "\n") && strings.Count(data, "\r\n") == strings.Count(data, "\n") {
+		return WindowsTextEncoding
+	}
+	return BinaryEncoding
+}
 
 /*
  * Encoder
