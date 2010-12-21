@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=qprintable
+TARG=encoding/qprintable
 GOFILES=\
 	qprintable.go\
 
