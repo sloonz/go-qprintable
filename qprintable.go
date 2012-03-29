@@ -18,9 +18,8 @@
 package qprintable
 
 import (
-	"io"
-	"os"
 	"bytes"
+	"io"
 	"strings"
 )
 
@@ -90,7 +89,7 @@ func (e *encoder) nextSpecialChar(p []byte) (i int) {
 	return i
 }
 
-func (e *encoder) writeAndWrap(p []byte, atomic bool) (err os.Error) {
+func (e *encoder) writeAndWrap(p []byte, atomic bool) (err error) {
 	// -1 is to keep enough size for the trailing =
 	for e.lineSize+len(p) > (maxLineSize - 1) {
 		if !atomic {
@@ -111,7 +110,7 @@ func (e *encoder) writeAndWrap(p []byte, atomic bool) (err os.Error) {
 	return err
 }
 
-func (e *encoder) Write(p []byte) (n int, err os.Error) {
+func (e *encoder) Write(p []byte) (n int, err error) {
 	if len(p) == 0 {
 		return 0, nil
 	}
@@ -187,7 +186,7 @@ func (e *encoder) Write(p []byte) (n int, err os.Error) {
 	return n, err
 }
 
-func (e *encoder) Close() os.Error {
+func (e *encoder) Close() error {
 	if e.wasCR {
 		if err := e.writeAndWrap([]byte("=0D"), true); err != nil {
 			return err
@@ -385,7 +384,7 @@ func (d *decoder) parseBytes(rawData []byte) {
 	}
 }
 
-func (d *decoder) Read(p []byte) (n int, err os.Error) {
+func (d *decoder) Read(p []byte) (n int, err error) {
 	var read int
 	canContinue := true
 	for n < len(p) && canContinue {
@@ -395,7 +394,7 @@ func (d *decoder) Read(p []byte) (n int, err os.Error) {
 			if read < 1024 || err != nil {
 				canContinue = false
 			}
-			if err == os.EOF && read == 0 && d.leftovers.Len() > 0 {
+			if err == io.EOF && read == 0 && d.leftovers.Len() > 0 {
 				// Underlying Reader is exhausted and there's still data in leftovers
 				// This can't happen in well-formed streams. For ill-formed streams :
 				//  - if leftovers = "=\r", "=(spaces)", just discard it
