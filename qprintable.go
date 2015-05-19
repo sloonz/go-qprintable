@@ -72,6 +72,7 @@ func DetectEncoding(data string) *Encoding {
  */
 
 type encoder struct {
+	eol      string
 	enc      *Encoding
 	w        io.Writer
 	lineSize int
@@ -99,7 +100,7 @@ func (e *encoder) writeAndWrap(p []byte, atomic bool) (err error) {
 			}
 			p = p[wSize:]
 		}
-		if _, err = e.w.Write([]byte("=\r\n")); err != nil {
+		if _, err = e.w.Write([]byte("=" + e.eol)); err != nil {
 			return err
 		}
 		e.lineSize = 0
@@ -120,7 +121,7 @@ func (e *encoder) Write(p []byte) (n int, err error) {
 	if e.wasCR {
 		if p[0] == '\n' {
 			// EOL: consume LF and then convert it to CRLF
-			if _, err = e.w.Write([]byte("\r\n")); err == nil {
+			if _, err = e.w.Write([]byte(e.eol)); err == nil {
 				n++
 				p = p[1:]
 				e.lineSize = 0
@@ -154,7 +155,7 @@ func (e *encoder) Write(p []byte) (n int, err error) {
 			}
 		} else if e.enc.isText && p[pos] == e.enc.nativeEol[0] {
 			// Other EOL
-			if _, err = e.w.Write([]byte("\r\n")); err != nil {
+			if _, err = e.w.Write([]byte(e.eol)); err != nil {
 				return n, err
 			}
 			e.lineSize = 0
@@ -221,7 +222,16 @@ func (e *encoder) Close() error {
 // function is useful only for invalid WindowsEncoding text streams,
 // you can safely ignore it in all other cases.
 func NewEncoder(enc *Encoding, w io.Writer) io.WriteCloser {
-	return &encoder{enc: enc, w: w}
+	return &encoder{eol: "\r\n", enc: enc, w: w}
+}
+
+// Returns an encoder where the line-endings of the resulting stream
+// is not the standard value (CRLF)
+//
+// Standard requires CRLF line endings, but there are some variants
+// out there (like Maildir) which requires LF line endings.
+func NewEncoderWithEOL(eol string, enc *Encoding, w io.Writer) io.WriteCloser {
+	return &encoder{eol: eol, enc: enc, w: w}
 }
 
 /*

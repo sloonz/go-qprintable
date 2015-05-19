@@ -47,6 +47,13 @@ var eolTests = []eolTestData{
 	{"Hello\rworld", "Hello=0Dworld", "Hello=0Dworld", "Hello\r\nworld", "Hello=0Dworld"},
 }
 
+var eolTestsLF = []eolTestData{
+	// Tests for non-standard version (EncodeWithEOL)
+	{"Hello\nworld", "Hello\nworld", "Hello=0Aworld", "Hello=0Aworld", "Hello=0Aworld"},
+	{"Hello\r\nworld", "Hello=0D\nworld", "Hello\nworld", "Hello\n=0Aworld", "Hello=0D=0Aworld"},
+	{"Hello\rworld", "Hello=0Dworld", "Hello=0Dworld", "Hello\nworld", "Hello=0Dworld"},
+}
+
 var wrapTests = []universalTestData{ // Will be tested with Unix encoding
 	{ // Should wrap at 75 characters
 		"123456789 123456789 123456789 123456789 123456789 123456789 123456789 12345" +
@@ -82,6 +89,41 @@ var wrapTests = []universalTestData{ // Will be tested with Unix encoding
 	},
 }
 
+var wrapTestsLF = []universalTestData{ // Will be tested with Unix encoding
+	{ // Should wrap at 75 characters
+		"123456789 123456789 123456789 123456789 123456789 123456789 123456789 12345" +
+			"123456789 123456789 123456789 123456789 123456789 123456789 123456789 12345" +
+			"12345",
+		"123456789 123456789 123456789 123456789 123456789 123456789 123456789 12345" + "=\n" +
+			"123456789 123456789 123456789 123456789 123456789 123456789 123456789 12345" + "=\n" +
+			"12345",
+	},
+	{ // Should wrap at 75 characters even when a character is expanded
+		"123456789 123456789 1é89 123456789 123456789 123456789 123456789 12345" +
+			"123456789 123456789 123456789 1é89 123456789 123456789 123456789 12345" +
+			"12345",
+		"123456789 123456789 1=C3=A989 123456789 123456789 123456789 123456789 12345" + "=\n" +
+			"123456789 123456789 123456789 1=C3=A989 123456789 123456789 123456789 12345" + "=\n" +
+			"12345",
+	},
+	{ // =xx sequences are atomic
+		"123456789 123456789 123456789 123456789 123456789 123456789 123456789 1234é" +
+			"789 123456789 123456789 123456789 123456789 123456789 123456789 12345" +
+			"12345",
+		"123456789 123456789 123456789 123456789 123456789 123456789 123456789 1234" + "=\n" +
+			"=C3=A9789 123456789 123456789 123456789 123456789 123456789 123456789 12345" + "=\n" +
+			"12345",
+	},
+	{ // Hard line breaks should reset counter
+		"1234\n" +
+			"123456789 123456789 123456789 123456789 123456789 123456789 123456789 12345" +
+			"12345",
+		"1234\n" +
+			"123456789 123456789 123456789 123456789 123456789 123456789 123456789 12345" + "=\n" +
+			"12345",
+	},
+}
+
 func testEqual(t *testing.T, testName string, expected, actual []byte) bool {
 	if bytes.Compare(expected, actual) != 0 {
 		t.Logf("Test %s: result is not what was expected !", testName)
@@ -109,10 +151,15 @@ func TestEncodingDetection(t *testing.T) {
  * Encoder tests
  */
 
-func testEncodeChunked(t *testing.T, chunkSize int, testName string, enc *Encoding, decoded, encoded []byte) {
+func testEncodeChunked(t *testing.T, chunkSize int, testName string, enc *Encoding, decoded, encoded []byte, eol string) {
 	var part []byte
 	encBuf := bytes.NewBuffer(nil)
-	encoder := NewEncoder(enc, encBuf)
+	var encoder io.WriteCloser
+	if eol != "" {
+		encoder = NewEncoderWithEOL(eol, enc, encBuf)
+	} else {
+		encoder = NewEncoder(enc, encBuf)
+	}
 	for decoded != nil {
 		if len(decoded) > chunkSize {
 			part = decoded[:chunkSize]
@@ -130,35 +177,50 @@ func testEncodeChunked(t *testing.T, chunkSize int, testName string, enc *Encodi
 	testEqual(t, testName, encoded, encBuf.Bytes())
 }
 
-func testEncode(t *testing.T, testName string, enc *Encoding, decoded, encoded []byte) {
-	testEncodeChunked(t, len(decoded), fmt.Sprintf("%s/c*", testName), enc, decoded, encoded)
-	testEncodeChunked(t, 1, fmt.Sprintf("%s/c1", testName), enc, decoded, encoded)
-	testEncodeChunked(t, 3, fmt.Sprintf("%s/c3", testName), enc, decoded, encoded)
-	testEncodeChunked(t, 4, fmt.Sprintf("%s/c4", testName), enc, decoded, encoded)
-	testEncodeChunked(t, 16, fmt.Sprintf("%s/c16", testName), enc, decoded, encoded)
+func testEncode(t *testing.T, testName string, enc *Encoding, decoded, encoded []byte, eol string) {
+	testEncodeChunked(t, len(decoded), fmt.Sprintf("%s/c*", testName), enc, decoded, encoded, eol)
+	testEncodeChunked(t, 1, fmt.Sprintf("%s/c1", testName), enc, decoded, encoded, eol)
+	testEncodeChunked(t, 3, fmt.Sprintf("%s/c3", testName), enc, decoded, encoded, eol)
+	testEncodeChunked(t, 4, fmt.Sprintf("%s/c4", testName), enc, decoded, encoded, eol)
+	testEncodeChunked(t, 16, fmt.Sprintf("%s/c16", testName), enc, decoded, encoded, eol)
 }
 
 func TestUniversalEncode(t *testing.T) {
 	for i, testData := range universalTests {
-		testEncode(t, fmt.Sprintf("%d/Binary", i+1), BinaryEncoding, []byte(testData.decoded), []byte(testData.encoded))
-		testEncode(t, fmt.Sprintf("%d/Unix", i+1), UnixTextEncoding, []byte(testData.decoded), []byte(testData.encoded))
-		testEncode(t, fmt.Sprintf("%d/Windows", i+1), WindowsTextEncoding, []byte(testData.decoded), []byte(testData.encoded))
-		testEncode(t, fmt.Sprintf("%d/Mac", i+1), MacTextEncoding, []byte(testData.decoded), []byte(testData.encoded))
+		testEncode(t, fmt.Sprintf("%d/Binary", i+1), BinaryEncoding, []byte(testData.decoded), []byte(testData.encoded), "")
+		testEncode(t, fmt.Sprintf("%d/Unix", i+1), UnixTextEncoding, []byte(testData.decoded), []byte(testData.encoded), "")
+		testEncode(t, fmt.Sprintf("%d/Windows", i+1), WindowsTextEncoding, []byte(testData.decoded), []byte(testData.encoded), "")
+		testEncode(t, fmt.Sprintf("%d/Mac", i+1), MacTextEncoding, []byte(testData.decoded), []byte(testData.encoded), "")
 	}
 }
 
 func TestEOLEncode(t *testing.T) {
 	for i, testData := range eolTests {
-		testEncode(t, fmt.Sprintf("%d/Binary", i+1), BinaryEncoding, []byte(testData.decoded), []byte(testData.binEncoded))
-		testEncode(t, fmt.Sprintf("%d/Unix", i+1), UnixTextEncoding, []byte(testData.decoded), []byte(testData.unixEncoded))
-		testEncode(t, fmt.Sprintf("%d/Windows", i+1), WindowsTextEncoding, []byte(testData.decoded), []byte(testData.winEncoded))
-		testEncode(t, fmt.Sprintf("%d/Mac", i+1), MacTextEncoding, []byte(testData.decoded), []byte(testData.macEncoded))
+		testEncode(t, fmt.Sprintf("%d/Binary", i+1), BinaryEncoding, []byte(testData.decoded), []byte(testData.binEncoded), "")
+		testEncode(t, fmt.Sprintf("%d/Unix", i+1), UnixTextEncoding, []byte(testData.decoded), []byte(testData.unixEncoded), "")
+		testEncode(t, fmt.Sprintf("%d/Windows", i+1), WindowsTextEncoding, []byte(testData.decoded), []byte(testData.winEncoded), "")
+		testEncode(t, fmt.Sprintf("%d/Mac", i+1), MacTextEncoding, []byte(testData.decoded), []byte(testData.macEncoded), "")
+	}
+}
+
+func TestEOLEncodeLF(t *testing.T) {
+	for i, testData := range eolTestsLF {
+		testEncode(t, fmt.Sprintf("%d/Binary", i+1), BinaryEncoding, []byte(testData.decoded), []byte(testData.binEncoded), "\n")
+		testEncode(t, fmt.Sprintf("%d/Unix", i+1), UnixTextEncoding, []byte(testData.decoded), []byte(testData.unixEncoded), "\n")
+		testEncode(t, fmt.Sprintf("%d/Windows", i+1), WindowsTextEncoding, []byte(testData.decoded), []byte(testData.winEncoded), "\n")
+		testEncode(t, fmt.Sprintf("%d/Mac", i+1), MacTextEncoding, []byte(testData.decoded), []byte(testData.macEncoded), "\n")
 	}
 }
 
 func TestWrapEncode(t *testing.T) {
 	for i, testData := range wrapTests {
-		testEncode(t, fmt.Sprintf("%d/Unix", i+1), UnixTextEncoding, []byte(testData.decoded), []byte(testData.encoded))
+		testEncode(t, fmt.Sprintf("%d/Unix", i+1), UnixTextEncoding, []byte(testData.decoded), []byte(testData.encoded), "")
+	}
+}
+
+func TestWrapEncodeLF(t *testing.T) {
+	for i, testData := range wrapTestsLF {
+		testEncode(t, fmt.Sprintf("%d/Unix", i+1), UnixTextEncoding, []byte(testData.decoded), []byte(testData.encoded), "\n")
 	}
 }
 
